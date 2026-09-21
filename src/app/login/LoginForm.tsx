@@ -69,7 +69,7 @@ export default function LoginForm() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1">
             <span className="font-mono text-[10px] uppercase tracking-[0.15em] opacity-60">
-              Serial No.
+              Unit ID
             </span>
             <input
               type="text"
@@ -77,7 +77,7 @@ export default function LoginForm() {
               autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="SE-4821-B"
+              placeholder="connor-rk800"
               className="font-mono border border-foreground/20 bg-white/70 px-3 py-2 outline-none focus:border-accent"
             />
           </label>

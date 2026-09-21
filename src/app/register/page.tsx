@@ -6,6 +6,7 @@ import CornerFrame from "@/components/CornerFrame";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +24,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, firstName, lastName, password }),
+        body: JSON.stringify({ email, username, firstName, lastName, password }),
       });
       const data = await res.json();
 
@@ -33,9 +34,10 @@ export default function RegisterPage() {
       }
 
       setSuccess(
-        `Unit ${data.username} created. Check your email to activate it.`,
+        `Unit ID ${data.username} created. Serial No. ${data.serialNumber}. Check your email to activate it.`,
       );
       setEmail("");
+      setUsername("");
       setFirstName("");
       setLastName("");
       setPassword("");
@@ -65,6 +67,23 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1">
+            <span className="font-mono text-[10px] uppercase tracking-[0.15em] opacity-60">
+              Unit ID
+            </span>
+            <input
+              type="text"
+              required
+              minLength={3}
+              maxLength={50}
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="connor-rk800"
+              className="font-mono border border-foreground/20 bg-white/70 px-3 py-2 outline-none focus:border-accent"
+            />
+          </label>
+
           <label className="flex flex-col gap-1">
             <span className="font-mono text-[10px] uppercase tracking-[0.15em] opacity-60">
               Designation (first name)
@@ -136,7 +155,7 @@ export default function RegisterPage() {
 
         <div className="font-mono mt-6 text-center text-[11px] opacity-70">
           <Link href="/login" className="hover:text-accent">
-            Already have a Serial No.? Log in
+            Already have a Unit ID? Log in
           </Link>
         </div>
 

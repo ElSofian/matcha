@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
+import { query, withTransaction } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { generateToken } from "@/lib/tokens";
 import { requestPasswordResetSchema } from "@/lib/validation";
@@ -25,12 +25,28 @@ export async function POST(request: Request) {
   // leaking which emails are registered.
   if (rows.length > 0) {
     const token = generateToken();
-    await query(
-      `INSERT INTO email_tokens (user_id, token, type, expires_at)
-       VALUES ($1, $2, 'password_reset', NOW() + INTERVAL '1 hour')`,
-      [rows[0].id, token],
-    );
-    await sendPasswordResetEmail(email, token);
+    try {
+      await withTransaction(async (client) => {
+        await client.query(
+          `UPDATE email_tokens
+           SET used = TRUE
+           WHERE user_id = $1 AND type = 'password_reset' AND used = FALSE`,
+          [rows[0].id],
+        );
+        await client.query(
+          `INSERT INTO email_tokens (user_id, token, type, expires_at)
+           VALUES ($1, $2, 'password_reset', NOW() + INTERVAL '1 hour')`,
+          [rows[0].id, token],
+        );
+      });
+
+      await sendPasswordResetEmail(email, token);
+    } catch {
+      // A failed email must not leave a usable reset token behind.
+      await query("UPDATE email_tokens SET used = TRUE WHERE token = $1", [
+        token,
+      ]).catch(() => undefined);
+    }
   }
 
   return NextResponse.json({

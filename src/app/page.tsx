@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { query } from "@/lib/db";
 import { getCurrentUserId } from "@/lib/session";
@@ -6,6 +7,7 @@ import LogoutButton from "@/components/LogoutButton";
 
 interface UserRow {
   username: string;
+  serial_number: string;
   first_name: string;
   last_name: string;
   email: string;
@@ -20,7 +22,7 @@ export default async function HomePage() {
   }
 
   const { rows } = await query<UserRow>(
-    `SELECT username, first_name, last_name, email, fame_rating, is_verified
+    `SELECT username, serial_number, first_name, last_name, email, fame_rating, is_verified
      FROM users WHERE id = $1`,
     [userId],
   );
@@ -42,8 +44,12 @@ export default async function HomePage() {
 
         <dl className="font-mono flex flex-col gap-3 text-sm">
           <div className="flex justify-between border-b border-foreground/10 pb-2">
-            <dt className="field-label opacity-60">Serial No.</dt>
+            <dt className="field-label opacity-60">Unit ID</dt>
             <dd>{user.username}</dd>
+          </div>
+          <div className="flex justify-between border-b border-foreground/10 pb-2">
+            <dt className="field-label opacity-60">Serial No.</dt>
+            <dd>{user.serial_number}</dd>
           </div>
           <div className="flex justify-between border-b border-foreground/10 pb-2">
             <dt className="field-label opacity-60">Email</dt>
@@ -60,6 +66,9 @@ export default async function HomePage() {
         </dl>
 
         <div className="mt-8 flex justify-end">
+          <Link className="mr-4 font-mono text-sm underline" href="/profile">
+            Edit profile
+          </Link>
           <LogoutButton />
         </div>
       </CornerFrame>

@@ -5,6 +5,7 @@ import { getCurrentUserId } from "@/lib/session";
 interface MeRow {
   id: string;
   username: string;
+  serial_number: string;
   first_name: string;
   last_name: string;
   email: string;
@@ -20,7 +21,7 @@ export async function GET() {
   }
 
   const { rows } = await query<MeRow>(
-    `SELECT id, username, first_name, last_name, email, fame_rating, is_verified, created_at
+    `SELECT id, username, serial_number, first_name, last_name, email, fame_rating, is_verified, created_at
      FROM users WHERE id = $1`,
     [userId],
   );

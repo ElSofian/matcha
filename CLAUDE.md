@@ -11,12 +11,13 @@ légèrement sinistre. CyberLife surveille tout.
 
 Nom de l'app : **CY//MATCH**
 
-## Stack technique (validée, ne pas dévier)
+## Stack technique choisie
 
-- **Frontend + Backend** : Next.js (API routes). Pas d'Express — Next.js seul respecte
-  la définition du sujet (micro-framework = routeur + templating, sans ORM/validators/
-  gestion de comptes).
-- **Serveur** : Custom server (`server.js`) combinant Next.js + Socket.io sur le même
+- **Frontend + Backend** : Next.js (API routes). Express est autorisé par le sujet,
+  mais n'est pas retenu pour ce projet : la stack familière Next.js/React/Tailwind
+  permet d'aller plus vite tout en conservant les contraintes du sujet (pas d'ORM,
+  de validateur intégré ni de gestionnaire de comptes).
+- **Serveur** : Custom server (`server.ts`) combinant Next.js + Socket.io sur le même
   process. Obligatoire pour le WebSocket. **Ne peut pas être déployé sur Vercel** —
   nécessite VPS ou Railway/Render.
 - **DB** : PostgreSQL, requêtes SQL manuelles via `pg`. **Aucun ORM** (Prisma, Drizzle
@@ -63,7 +64,8 @@ DB derrière :
 
 | Champ DB (sujet)     | Label UI CyberLife         | Modifiable |
 |-----------------------|-----------------------------|------------|
-| `username` (unique)  | Serial No. (`#SE-4821-B`)  | Non (auto-généré à l'inscription) |
+| `username` (unique)  | Unit ID / username          | Oui (choisi à l'inscription) |
+| `serial_number`      | Serial No. (`#SE-4821-B`)   | Non (auto-généré, interne au lore) |
 | —                     | Model (`AX400`, catégorie) | Non |
 | `first_name`         | Designation                 | Oui |
 | `last_name`          | Owner                       | Oui |
@@ -93,7 +95,7 @@ Typographie :
   interactives.
 - Tirets `–` devant chaque label de champ en lecture seule.
 - LED CyberLife : anneau cyan avec un segment blanc à 10% du périmètre (voir
-  `assets/cyberlife_led.svg`).
+  `assets/logo.svg`).
 - Triangle CyberLife (logo) : dégradé cyan clair → bleu profond, contour argenté.
 - Bio / footer légal en italique, très petit, très transparent — ton corporate
   sinistre (ex : *"CyberLife monitors all interactions to ensure optimal social
@@ -121,7 +123,7 @@ sans fond), nom en Bebas Neue en overlay bas, deux boutons flottants (pass / lik
 
 ## Ce qui est interdit (rappel sujet)
 
-- Express, BetterAuth, tout gestionnaire de comptes tiers.
+- BetterAuth et tout gestionnaire de comptes tiers.
 - Prisma, Drizzle, tout ORM.
 - Convex ou toute DB NoSQL.
 - Mots de passe en clair, requêtes concaténées, uploads non validés.
@@ -129,7 +131,7 @@ sans fond), nom en Bebas Neue en overlay bas, deux boutons flottants (pass / lik
 ## Commandes utiles
 
 ```bash
-npm run dev          # lance server.js (Next.js + Socket.io)
+npm run dev          # lance server.ts (Next.js + Socket.io)
 psql matcha           # accès direct DB en local
 ```
 

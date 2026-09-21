@@ -14,13 +14,13 @@ function randomSerial(): string {
   return `${prefix}-${digits}-${suffix}`;
 }
 
-// CyberLife-flavored Serial No., e.g. "SE-4821-B". Backs the subject's
-// required unique `username` field but is never chosen by the user.
+// CyberLife-flavored Serial No., e.g. "SE-4821-B". It is a separate,
+// immutable lore identifier; the subject-required username remains user-chosen.
 export async function generateUniqueSerial(): Promise<string> {
   for (let attempt = 0; attempt < 10; attempt++) {
     const candidate = randomSerial();
     const { rows } = await query<{ exists: boolean }>(
-      "SELECT EXISTS (SELECT 1 FROM users WHERE username = $1) AS exists",
+      "SELECT EXISTS (SELECT 1 FROM users WHERE serial_number = $1) AS exists",
       [candidate],
     );
     if (!rows[0]?.exists) {

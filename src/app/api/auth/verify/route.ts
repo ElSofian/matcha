@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { query, withTransaction } from "@/lib/db";
+import { withTransaction } from "@/lib/db";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL as string;
 
@@ -11,26 +11,30 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${APP_URL}/login?error=invalid_token`);
   }
 
-  const { rows } = await query<{ user_id: string }>(
-    `SELECT user_id FROM email_tokens
-     WHERE token = $1 AND type = 'email_verification' AND used = FALSE AND expires_at > NOW()`,
-    [token],
-  );
+  const userId = await withTransaction(async (client) => {
+    const { rows } = await client.query<{ user_id: string }>(
+      `UPDATE email_tokens
+       SET used = TRUE
+       WHERE token = $1 AND type = 'email_verification'
+         AND used = FALSE AND expires_at > NOW()
+       RETURNING user_id`,
+      [token],
+    );
 
-  if (rows.length === 0) {
+    if (rows.length === 0) {
+      return null;
+    }
+
+    await client.query("UPDATE users SET is_verified = TRUE WHERE id = $1", [
+      rows[0].user_id,
+    ]);
+
+    return rows[0].user_id;
+  });
+
+  if (!userId) {
     return NextResponse.redirect(`${APP_URL}/login?error=invalid_token`);
   }
-
-  const userId = rows[0].user_id;
-
-  await withTransaction(async (client) => {
-    await client.query("UPDATE users SET is_verified = TRUE WHERE id = $1", [
-      userId,
-    ]);
-    await client.query("UPDATE email_tokens SET used = TRUE WHERE token = $1", [
-      token,
-    ]);
-  });
 
   return NextResponse.redirect(`${APP_URL}/login?verified=1`);
 }

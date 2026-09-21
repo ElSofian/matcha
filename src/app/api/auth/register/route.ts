@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
+import { query, withTransaction } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { checkPasswordStrength } from "@/lib/password";
 import { sendVerificationEmail } from "@/lib/email";
@@ -17,10 +17,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const { email, firstName, lastName, password } = parsed.data;
+  const { email, username, firstName, lastName, password } = parsed.data;
 
   const strength = checkPasswordStrength(password, [
     email.split("@")[0],
+    username,
     firstName,
     lastName,
   ]);
@@ -29,38 +30,39 @@ export async function POST(request: Request) {
   }
 
   const { rows: existing } = await query<{ id: string }>(
-    "SELECT id FROM users WHERE email = $1",
-    [email],
+    "SELECT id FROM users WHERE email = $1 OR username = $2",
+    [email, username],
   );
   if (existing.length > 0) {
     return NextResponse.json(
-      { error: "An account already exists for this email." },
+      { error: "An account already exists for this email or Unit ID." },
       { status: 409 },
     );
   }
 
-  const username = await generateUniqueSerial();
+  const serialNumber = await generateUniqueSerial();
   const passwordHash = await hashPassword(password);
 
-  const { rows } = await query<{ id: string }>(
-    `INSERT INTO users (email, username, first_name, last_name, password_hash)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id`,
-    [email, username, firstName, lastName, passwordHash],
-  );
-  const userId = rows[0].id;
-
   const token = generateToken();
-  await query(
-    `INSERT INTO email_tokens (user_id, token, type, expires_at)
-     VALUES ($1, $2, 'email_verification', NOW() + INTERVAL '1 hour')`,
-    [userId, token],
-  );
+  await withTransaction(async (client) => {
+    const { rows } = await client.query<{ id: string }>(
+      `INSERT INTO users (email, username, serial_number, first_name, last_name, password_hash)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id`,
+      [email, username, serialNumber, firstName, lastName, passwordHash],
+    );
+
+    await client.query(
+      `INSERT INTO email_tokens (user_id, token, type, expires_at)
+       VALUES ($1, $2, 'email_verification', NOW() + INTERVAL '1 hour')`,
+      [rows[0].id, token],
+    );
+  });
 
   await sendVerificationEmail(email, token);
 
   return NextResponse.json(
-    { message: "Account created. Check your email to activate it.", username },
+    { message: "Account created. Check your email to activate it.", username, serialNumber },
     { status: 201 },
   );
 }

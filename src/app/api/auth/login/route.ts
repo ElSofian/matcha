@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
   const invalid = () =>
     NextResponse.json(
-      { error: "Invalid Serial No. or Access Code." },
+      { error: "Invalid Unit ID or Access Code." },
       { status: 401 },
     );
 

@@ -8,7 +8,8 @@
     "start": "NODE_ENV=production tsx server.ts",
     "lint": "eslint",
     "db:start": "tsx scripts/dev-db.ts",
-    "db:migrate": "tsx scripts/migrate.ts"
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed-dev.ts"
   },
   "dependencies": {
     "@zxcvbn-ts/core": "^4.1.2",
