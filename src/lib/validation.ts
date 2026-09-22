@@ -60,3 +60,10 @@ export const profileSchema = z
       });
     }
   });
+
+export const profileTagsSchema = z.object({
+  tags: z
+    .array(z.string().trim().toLowerCase().min(1).max(50).regex(/^[a-z0-9][a-z0-9 -]*$/))
+    .max(10)
+    .transform((tags) => [...new Set(tags)]),
+});

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bebas_Neue, DM_Sans, Share_Tech_Mono } from "next/font/google";
+import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import "./globals.css";
 
 const bebasNeue = Bebas_Neue({
@@ -35,7 +36,11 @@ export default function RootLayout({
       lang="en"
       className={`${bebasNeue.variable} ${dmSans.variable} ${shareTechMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <SiteHeader />
+        <div className="flex-1">{children}</div>
+        <SiteFooter />
+      </body>
     </html>
   );
 }

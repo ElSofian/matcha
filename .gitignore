@@ -11,7 +11,7 @@ node_modules/
 out/
 
 # Uploads (photos utilisateurs)
-/uploads
+/public/uploads
 
 # Local embedded Postgres data (dev only, no system Postgres available)
 /.pgdata

@@ -65,9 +65,12 @@ export default async function HomePage() {
           </div>
         </dl>
 
-        <div className="mt-8 flex justify-end">
-          <Link className="mr-4 font-mono text-sm underline" href="/profile">
+        <div className="mt-8 flex flex-wrap justify-end gap-4 font-mono text-sm underline">
+          <Link href="/profile">
             Edit profile
+          </Link>
+          <Link href="/users/fixture-001">
+            View fixture profile
           </Link>
           <LogoutButton />
         </div>
