@@ -70,6 +70,11 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         [viewerId, user.id],
       );
       await client.query("INSERT INTO profile_views (viewer_id, viewed_id) VALUES ($1, $2)", [viewerId, user.id]);
+      const { rows: muted } = await client.query<{ exists: boolean }>(
+        "SELECT EXISTS (SELECT 1 FROM notification_mutes WHERE user_id = $1 AND muted_user_id = $2) AS exists",
+        [user.id, viewerId],
+      );
+      if (muted[0].exists) return false;
       const { rows: recent } = await client.query<{ exists: boolean }>(
         `SELECT EXISTS (
            SELECT 1 FROM notifications

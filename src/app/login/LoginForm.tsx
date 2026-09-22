@@ -75,7 +75,7 @@ export default function LoginForm() {
             This activation link is invalid or expired.
           </p>
         )}
-        <form className="mb-4 border border-foreground/15 p-3" onSubmit={resendVerification}><p className="font-mono text-xs opacity-70">Need a new activation link?</p><div className="mt-2 flex gap-2"><input aria-label="Email for activation link" className="min-w-0 flex-1 border border-foreground/20 bg-white/70 px-2 py-1 text-sm" onChange={(event) => setResendEmail(event.target.value)} required type="email" value={resendEmail} /><button className="border border-foreground/30 px-2 font-mono text-xs" type="submit">Resend</button></div>{resendStatus && <p className="mt-2 font-mono text-xs" role="status">{resendStatus}</p>}</form>
+        {tokenError && <form className="mb-4 border border-foreground/15 p-3" onSubmit={resendVerification}><p className="font-mono text-xs opacity-70">Need a new activation link?</p><div className="mt-2 flex gap-2"><input aria-label="Email for activation link" className="min-w-0 flex-1 border border-foreground/20 bg-white/70 px-2 py-1 text-sm" onChange={(event) => setResendEmail(event.target.value)} required type="email" value={resendEmail} /><button className="border border-foreground/30 px-2 font-mono text-xs" type="submit">Resend</button></div>{resendStatus && <p className="mt-2 font-mono text-xs" role="status">{resendStatus}</p>}</form>}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1">

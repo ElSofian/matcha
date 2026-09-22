@@ -74,6 +74,11 @@ export async function PATCH(request: Request) {
   if (data.birthDate && new Date(`${data.birthDate}T00:00:00Z`) > new Date()) {
     return NextResponse.json({ error: "Birth date cannot be in the future." }, { status: 400 });
   }
+  if (data.birthDate) {
+    const today = new Date();
+    const adultCutoff = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+    if (new Date(`${data.birthDate}T00:00:00Z`) > adultCutoff) return NextResponse.json({ error: "CY//MATCH is reserved for adults aged 18 or over." }, { status: 400 });
+  }
 
   const { rows } = await query<ProfileRow>(
     `UPDATE users

@@ -30,6 +30,15 @@ export interface DiscoveryProfile extends QueryResultRow {
   same_area: boolean;
 }
 
+export async function hasMatchingLocation(userId: string) {
+  const { rows } = await query<{ location_source: string; city: string | null; latitude: number | null; longitude: number | null }>(
+    "SELECT location_source, city, latitude, longitude FROM users WHERE id = $1",
+    [userId],
+  );
+  const profile = rows[0];
+  return Boolean(profile && ((profile.location_source === "precise" && profile.latitude !== null && profile.longitude !== null) || (profile.location_source === "approximate" && profile.city)));
+}
+
 function orderFor(sort: DiscoverySort) {
   switch (sort) {
     case "distance":

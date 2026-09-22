@@ -5,6 +5,7 @@ export const registerSchema = z.object({
   username: z.string().trim().min(3).max(50).regex(/^[A-Za-z0-9_-]+$/, "Unit ID may only contain letters, numbers, _ or -."),
   firstName: z.string().trim().min(1).max(100),
   lastName: z.string().trim().min(1).max(100),
+  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a YYYY-MM-DD date."),
   password: z.string().min(8).max(256),
 });
 

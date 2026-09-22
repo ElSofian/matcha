@@ -19,7 +19,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const { email, username, firstName, lastName, password } = parsed.data;
+  const { email, username, firstName, lastName, birthDate, password } = parsed.data;
+  const today = new Date();
+  const adultCutoff = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+  const parsedBirthDate = new Date(`${birthDate}T00:00:00Z`);
+  if (Number.isNaN(parsedBirthDate.getTime()) || parsedBirthDate > adultCutoff) {
+    return NextResponse.json({ error: "CY//MATCH is reserved for adults aged 18 or over." }, { status: 400 });
+  }
   if (isRateLimited(`register:${email}`, 3, 60 * 60_000)) return NextResponse.json({ error: "Too many registration attempts. Try again later." }, { status: 429 });
 
   const strength = checkPasswordStrength(password, [
@@ -49,10 +55,10 @@ export async function POST(request: Request) {
   const token = generateToken();
   await withTransaction(async (client) => {
     const { rows } = await client.query<{ id: string }>(
-      `INSERT INTO users (email, username, serial_number, first_name, last_name, password_hash)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO users (email, username, serial_number, first_name, last_name, birth_date, password_hash)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id`,
-      [email, username, serialNumber, firstName, lastName, passwordHash],
+      [email, username, serialNumber, firstName, lastName, birthDate, passwordHash],
     );
 
     await client.query(

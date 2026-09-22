@@ -3,6 +3,7 @@ import { verifyPassword } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { getCurrentUserId } from "@/lib/session";
 import { emailChangeSchema } from "@/lib/validation";
+import { SESSION_COOKIE_NAME } from "@/lib/session-cookie";
 
 interface AccountRow { email: string; password_hash: string }
 
@@ -33,4 +34,17 @@ export async function PATCH(request: Request) {
     [parsed.data.email, userId],
   );
   return NextResponse.json({ message: "Email address updated.", email: updated[0].email });
+}
+
+export async function DELETE(request: Request) {
+  const userId = await getCurrentUserId();
+  if (!userId) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  const body = await request.json().catch(() => null) as { currentPassword?: unknown } | null;
+  if (!body || typeof body.currentPassword !== "string" || body.currentPassword.length < 1 || body.currentPassword.length > 256) return NextResponse.json({ error: "Current password is required." }, { status: 400 });
+  const { rows } = await query<{ password_hash: string }>("SELECT password_hash FROM users WHERE id = $1", [userId]);
+  if (!rows[0] || !(await verifyPassword(body.currentPassword, rows[0].password_hash))) return NextResponse.json({ error: "Current password is incorrect." }, { status: 403 });
+  await query("DELETE FROM users WHERE id = $1", [userId]);
+  const response = NextResponse.json({ message: "Account deleted." });
+  response.cookies.set(SESSION_COOKIE_NAME, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
+  return response;
 }

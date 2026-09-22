@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { query } from "@/lib/db";
 import { getCurrentUserId } from "@/lib/session";
+import { getProfileReadiness } from "@/lib/profile-readiness";
 import CornerFrame from "@/components/CornerFrame";
 
 interface UserRow {
@@ -19,6 +20,7 @@ export default async function HomePage() {
   if (!userId) {
     redirect("/login");
   }
+  if (!(await getProfileReadiness(userId)).complete) redirect("/onboarding");
 
   const { rows } = await query<UserRow>(
     `SELECT username, serial_number, first_name, last_name, email, fame_rating, is_verified

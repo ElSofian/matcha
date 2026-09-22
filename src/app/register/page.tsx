@@ -9,6 +9,7 @@ export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -24,7 +25,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, username, firstName, lastName, password }),
+        body: JSON.stringify({ email, username, firstName, lastName, birthDate, password }),
       });
       const data = await res.json();
 
@@ -38,6 +39,7 @@ export default function RegisterPage() {
       setUsername("");
       setFirstName("");
       setLastName("");
+      setBirthDate("");
       setPassword("");
     } catch {
       setError("Network error. Try again.");
@@ -80,6 +82,11 @@ export default function RegisterPage() {
               placeholder="connor-rk800"
               className="font-mono border border-foreground/20 bg-white/70 px-3 py-2 outline-none focus:border-accent"
             />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="font-mono text-[10px] uppercase tracking-[0.15em] opacity-60">Date of birth</span>
+            <input type="date" required max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().slice(0, 10)} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="font-mono border border-foreground/20 bg-white/70 px-3 py-2 outline-none focus:border-accent" />
           </label>
 
           <label className="flex flex-col gap-1">

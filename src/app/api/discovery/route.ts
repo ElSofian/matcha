@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { discoverySorts, findDiscoveryProfiles, type DiscoveryFilters, type DiscoverySort } from "@/lib/discovery";
+import { getProfileReadiness } from "@/lib/profile-readiness";
 import { getCurrentUserId } from "@/lib/session";
 
 function integer(value: string | null, minimum: number, maximum: number) {
@@ -30,6 +31,7 @@ function filtersFrom(request: Request): DiscoveryFilters | null {
 export async function GET(request: Request) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  if (!(await getProfileReadiness(userId)).complete) return NextResponse.json({ error: "Complete your adult profile, location and primary photo before using matching." }, { status: 403 });
   const filters = filtersFrom(request);
   if (!filters) return NextResponse.json({ error: "Invalid discovery filters." }, { status: 400 });
 

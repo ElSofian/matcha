@@ -20,6 +20,7 @@ CREATE TABLE users (
   first_name        VARCHAR(100) NOT NULL,
   last_name         VARCHAR(100) NOT NULL,
   password_hash     TEXT NOT NULL,
+  birth_date        DATE,
   gender            gender_enum,
   sexual_preference preference_enum DEFAULT 'bisexual',
   bio               TEXT,
@@ -27,6 +28,7 @@ CREATE TABLE users (
   latitude          FLOAT,
   longitude         FLOAT,
   city              VARCHAR(255),
+  location_source   VARCHAR(20) NOT NULL DEFAULT 'unset' CHECK (location_source IN ('unset', 'precise', 'approximate')),
   profile_photo_id  UUID,                          -- FK ajoutée après (circular ref)
   is_verified       BOOLEAN NOT NULL DEFAULT FALSE,
   is_online         BOOLEAN NOT NULL DEFAULT FALSE,
@@ -174,6 +176,14 @@ CREATE TABLE notifications (
 );
 
 CREATE INDEX idx_notifications_user ON notifications(user_id, is_read, created_at DESC);
+
+CREATE TABLE notification_mutes (
+  user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  muted_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, muted_user_id),
+  CHECK (user_id <> muted_user_id)
+);
 
 -- ============================================================
 -- EMAIL TOKENS (vérification + reset password)

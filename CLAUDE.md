@@ -47,8 +47,8 @@ Nom de l'app : **CY//MATCH**
 
 ## Schéma DB
 
-11 tables : `users`, `photos`, `tags`, `user_tags`, `likes`, `blocks`, `reports`,
-`profile_views`, `messages`, `notifications`, `email_tokens`.
+12 tables : `users`, `photos`, `tags`, `user_tags`, `likes`, `blocks`, `reports`,
+`profile_views`, `messages`, `notifications`, `notification_mutes`, `email_tokens`.
 
 Détails complets dans `docs/matcha_schema.sql` (déjà fourni séparément).
 

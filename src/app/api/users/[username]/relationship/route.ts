@@ -62,6 +62,7 @@ export async function POST(
     }
 
     if (parsed.data.action === "like") {
+      await client.query("DELETE FROM notification_mutes WHERE user_id = $1 AND muted_user_id = $2", [viewerId, target.id]);
       const { rows: photos } = await client.query<{ has_primary_photo: boolean }>(
         "SELECT EXISTS (SELECT 1 FROM photos WHERE user_id = $1 AND is_profile = TRUE) AS has_primary_photo",
         [viewerId],
@@ -80,19 +81,25 @@ export async function POST(
       );
       const current = relationship(relationRows[0]);
       if (inserted.rowCount) {
-        await client.query(
-          "INSERT INTO notifications (user_id, from_user_id, type) VALUES ($1, $2, 'like')",
+        const { rows: mutes } = await client.query<{ muted: boolean }>(
+          "SELECT EXISTS (SELECT 1 FROM notification_mutes WHERE user_id = $1 AND muted_user_id = $2) AS muted",
           [target.id, viewerId],
         );
-        realtimeEvents.push({ userId: target.id, notification: { type: "like" } });
-        if (current.isMatch) {
+        if (!mutes[0].muted) {
           await client.query(
-            `INSERT INTO notifications (user_id, from_user_id, type)
-             VALUES ($1, $2, 'match'), ($2, $1, 'match')`,
-            [viewerId, target.id],
+            "INSERT INTO notifications (user_id, from_user_id, type) VALUES ($1, $2, 'like')",
+            [target.id, viewerId],
           );
-          realtimeEvents.push({ userId: viewerId, notification: { type: "match" } });
-          realtimeEvents.push({ userId: target.id, notification: { type: "match" } });
+          realtimeEvents.push({ userId: target.id, notification: { type: "like" } });
+          if (current.isMatch) {
+            await client.query(
+              `INSERT INTO notifications (user_id, from_user_id, type)
+               VALUES ($1, $2, 'match'), ($2, $1, 'match')`,
+              [viewerId, target.id],
+            );
+            realtimeEvents.push({ userId: viewerId, notification: { type: "match" } });
+            realtimeEvents.push({ userId: target.id, notification: { type: "match" } });
+          }
         }
       }
       return { relationship: current, message: current.isMatch ? "It is a match." : "Interest sent." } as const;
@@ -107,6 +114,7 @@ export async function POST(
       const before = relationship(beforeRows[0]);
       const wasMatch = before.isMatch;
       const deleted = await client.query("DELETE FROM likes WHERE liker_id = $1 AND liked_id = $2", [viewerId, target.id]);
+      if (deleted.rowCount) await client.query("INSERT INTO notification_mutes (user_id, muted_user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [viewerId, target.id]);
       if (deleted.rowCount && wasMatch) {
         await client.query(
           "INSERT INTO notifications (user_id, from_user_id, type) VALUES ($1, $2, 'unlike')",
