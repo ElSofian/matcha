@@ -2,50 +2,45 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import type { DiscoveryProfile } from "@/lib/discovery";
+import { characterFor } from "@/lib/characters";
 
-function age(birthDate: Date | string | null) {
-  if (!birthDate) return null;
-  const birthday = new Date(birthDate);
-  const today = new Date();
-  let value = today.getFullYear() - birthday.getFullYear();
-  if (today < new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate())) value -= 1;
-  return value;
-}
-
-function ProfileCard({ profile }: { profile: DiscoveryProfile }) {
-  const profileAge = age(profile.birth_date);
-  return <article className="border border-foreground/15 bg-white/60 p-3"><Link href={`/users/${profile.username}`} className="block focus:outline-none focus:ring-2 focus:ring-accent"><Image alt={`${profile.first_name}'s profile`} className="aspect-square w-full object-cover" height={440} src={profile.profile_photo_url ?? "/logo.svg"} width={440} /><h2 className="font-display mt-3 text-3xl">{profile.first_name} {profile.last_name}</h2><p className="font-mono text-xs opacity-60">@{profile.username} · {profileAge ?? "?"} years</p><dl className="mt-3 grid grid-cols-2 gap-2 text-sm"><div><dt className="opacity-60">Fame</dt><dd>{profile.fame_rating}</dd></div><div><dt className="opacity-60">Shared tags</dt><dd>{profile.common_tags}</dd></div><div className="col-span-2"><dt className="opacity-60">Location</dt><dd>{profile.city ?? "Not specified"}{profile.distance_km === null ? "" : ` · ${Math.round(profile.distance_km)} km`}</dd></div></dl>{profile.bio && <p className="mt-3 line-clamp-2 text-sm opacity-80">{profile.bio}</p>}</Link></article>;
+function compatibility(profile: DiscoveryProfile) {
+  return Math.min(98, 58 + (profile.common_tags * 7) + Math.round(profile.fame_rating / 5));
 }
 
 export default function DiscoveryClient({ initialProfiles }: { initialProfiles: DiscoveryProfile[] }) {
   const [profiles, setProfiles] = useState(initialProfiles);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const profile = profiles[0];
+  const character = profile ? characterFor(profile.username) : null;
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const params = new URLSearchParams();
-    for (const name of ["minAge", "maxAge", "minFame", "maxFame", "location", "sort"]) {
-      const value = String(data.get(name) ?? "").trim();
-      if (value) params.set(name, value);
-    }
-    String(data.get("tags") ?? "").split(",").map((tag) => tag.trim()).filter(Boolean).forEach((tag) => params.append("tag", tag));
-    setPending(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/discovery?${params.toString()}`, { cache: "no-store" });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? "Search failed.");
-      setProfiles(payload.profiles);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Search failed.");
-    } finally {
-      setPending(false);
-    }
+  function skip() {
+    setProfiles((current) => current.slice(1));
+    setStatus(null);
   }
 
-  return <div className="mx-auto w-full max-w-6xl px-4 py-10"><p className="font-mono text-xs uppercase tracking-[0.2em] opacity-50">Compatibility discovery</p><h1 className="font-display mt-2 text-5xl">Find compatible units</h1><p className="mt-3 max-w-2xl opacity-70">Suggestions prioritize your area, then distance, shared interests and fame rating. Only mutually compatible, verified and unblocked profiles are shown.</p><form className="mt-8 grid gap-3 border border-foreground/15 bg-white/60 p-4 sm:grid-cols-2 lg:grid-cols-4" onSubmit={submit}><label className="text-sm">Minimum age<input className="mt-1 w-full border border-foreground/25 bg-transparent p-2" min="18" name="minAge" type="number" /></label><label className="text-sm">Maximum age<input className="mt-1 w-full border border-foreground/25 bg-transparent p-2" min="18" name="maxAge" type="number" /></label><label className="text-sm">Minimum fame<input className="mt-1 w-full border border-foreground/25 bg-transparent p-2" min="0" name="minFame" type="number" /></label><label className="text-sm">Maximum fame<input className="mt-1 w-full border border-foreground/25 bg-transparent p-2" min="0" name="maxFame" type="number" /></label><label className="text-sm">City or area<input className="mt-1 w-full border border-foreground/25 bg-transparent p-2" maxLength={255} name="location" type="search" /></label><label className="text-sm">Tags (comma-separated)<input className="mt-1 w-full border border-foreground/25 bg-transparent p-2" name="tags" placeholder="music, hiking" type="text" /></label><label className="text-sm">Sort by<select className="mt-1 w-full border border-foreground/25 bg-transparent p-2" defaultValue="recommended" name="sort"><option value="recommended">Recommended</option><option value="distance">Distance</option><option value="tags">Shared tags</option><option value="fame">Fame</option><option value="age">Age</option></select></label><div className="flex items-end"><button className="w-full bg-foreground px-4 py-2 font-mono text-sm text-background disabled:opacity-50" disabled={pending} type="submit">{pending ? "Searching…" : "Apply filters"}</button></div></form>{error && <p className="mt-4 text-sm text-red-700" role="alert">{error}</p>}<p className="mt-6 font-mono text-sm opacity-60" aria-live="polite">{profiles.length} compatible profile{profiles.length === 1 ? "" : "s"} found</p><section className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Compatible profiles">{profiles.map((profile) => <ProfileCard key={profile.username} profile={profile} />)}</section>{profiles.length === 0 && <p className="mt-6 border border-foreground/15 p-4 opacity-70">No compatible profile matches these criteria yet. Try fewer filters or complete your profile preferences.</p>}</div>;
+  async function askForLink() {
+    if (!profile) return;
+    setPending(true);
+    setStatus(null);
+    try {
+      const response = await fetch(`/api/users/${profile.username}/relationship`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "like" }) });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Unable to send your request.");
+      setStatus(payload.relationship?.isMatch ? "Connection established. Your private line is open." : "Link request sent.");
+    } catch (cause) {
+      setStatus(cause instanceof Error ? cause.message : "Unable to send your request.");
+    } finally { setPending(false); }
+  }
+
+  if (!profile || !character) return <main className="site-grid cyber-page grid place-items-center"><div className="cyber-frame cyber-panel max-w-xl p-10 text-center"><span className="corner-tr" /><span className="corner-bl" /><p className="text-xl">No compatible unit is available right now.</p><Link className="mt-6 inline-block text-accent underline" href="/search">Refine your search</Link></div></main>;
+
+  return <main className="site-grid cyber-page relative overflow-hidden pb-6"><section className="relative min-h-[calc(100vh-6.5rem)] overflow-hidden"><Image alt="" aria-hidden className="pointer-events-none absolute bottom-0 left-1/2 hidden w-[35rem] max-w-none -translate-x-[64%] opacity-[0.10] blur-[1px] lg:block" src={character.image} /><Image alt="" aria-hidden className="pointer-events-none absolute bottom-0 left-1/2 hidden w-[35rem] max-w-none -translate-x-[43%] opacity-[0.12] blur-[1px] lg:block" src={character.image} /><Image alt={`${profile.first_name} ${profile.last_name}`} className="pointer-events-none absolute bottom-0 left-1/2 h-[70vh] w-auto max-w-none -translate-x-1/2 object-contain" priority src={character.image} />
+    <div className="absolute left-3 top-[29%] z-10 max-w-sm sm:left-7"><p className="font-display text-[clamp(3.8rem,7.5vw,7.5rem)] leading-none tracking-[-0.08em]">{character.model}</p><div className="mt-3 flex items-center gap-4"><span className="h-px w-24 bg-foreground" /><h1 className="text-3xl font-medium">{profile.first_name}</h1></div><ul className="mt-6 space-y-1.5 text-base"><li>− &nbsp; Compatibility: {compatibility(profile)}%</li><li>− &nbsp; Proximity: {profile.distance_km === null ? "Unknown" : `${Math.round(profile.distance_km)} km`}</li><li>− &nbsp; Fame rating: {profile.fame_rating}</li><li>− &nbsp; Shared tags:</li><li className="pl-5 font-semibold">{profile.common_tags ? `${profile.common_tags} in common` : "No shared tags yet"}</li></ul>{profile.bio && <p className="mt-12 max-w-sm text-base leading-snug">{profile.bio}</p>}</div>
+    <div className="absolute bottom-8 left-0 right-0 z-20 flex items-end justify-between gap-4 px-4 sm:px-6"><button className="cyber-frame cyber-button cyber-button--compact min-w-32" onClick={skip} type="button"><span className="corner-tr" /><span className="corner-bl" />Skip</button><div className="flex gap-2"><span className="size-4 rounded-full bg-[#4f91cc]" /><span className="size-4 rounded-full border border-[#7897b8]" /><span className="size-4 rounded-full border border-[#7897b8]" /></div><button className="cyber-frame cyber-button cyber-button--compact min-w-48" disabled={pending} onClick={askForLink} type="button"><span className="corner-tr" /><span className="corner-bl" />{pending ? "Sending…" : "Ask for link"}</button></div>
+    {status && <p className="absolute bottom-24 left-1/2 z-20 -translate-x-1/2 bg-white/85 px-4 py-2 text-sm shadow-sm" role="status">{status}</p>}
+  </section></main>;
 }

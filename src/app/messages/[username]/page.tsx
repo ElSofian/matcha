@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import ChatClient from "./ChatClient";
 import { query } from "@/lib/db";
 import { getCurrentUserId } from "@/lib/session";
+import Image from "next/image";
+import { characterFor } from "@/lib/characters";
 
 interface Partner { id: string; username: string; first_name: string; last_name: string }
 interface OwnUser { username: string }
@@ -44,5 +46,6 @@ export default async function MessagesPage({ params }: { params: Promise<{ usern
   );
   const initialMessages = rows.map((message) => ({ ...message, created_at: message.created_at.toISOString() }));
 
-  return <main className="mx-auto w-full max-w-3xl px-4 py-10"><Link className="font-mono text-sm underline" href={`/users/${partner.username}`}>← Back to profile</Link><p className="font-mono mt-8 text-xs uppercase tracking-[0.2em] opacity-50">Secure connection channel</p><h1 className="font-display mt-2 text-5xl">{partner.first_name} {partner.last_name}</h1><p className="mt-2 opacity-70">You are connected through mutual likes. Messages are delivered in real time.</p><ChatClient initialMessages={initialMessages} ownUsername={ownUser.username} partnerUsername={partner.username} /></main>;
+  const character = characterFor(partner.username);
+  return <main className="site-grid cyber-page relative overflow-hidden py-8"><Link className="absolute left-[40%] top-8 z-10 text-4xl text-[#6e86a5]" href="/messages">←</Link><p className="absolute left-[68%] top-10 z-10 text-lg">Private line</p><section className="grid min-h-[calc(100vh-9rem)] grid-cols-1 gap-8 lg:grid-cols-[35%_1fr]"><div className="relative hidden overflow-hidden lg:block"><Image alt={`${partner.first_name} ${partner.last_name}`} className="absolute bottom-0 left-1/2 h-[88%] w-auto max-w-none -translate-x-1/2 object-contain" priority src={character.image} /><p className="absolute bottom-24 left-1/2 w-80 -translate-x-1/2 bg-[#1f57a4] px-8 py-3 text-center text-2xl text-white">{character.model} - {partner.first_name}</p></div><div className="relative pt-20"><ChatClient initialMessages={initialMessages} ownUsername={ownUser.username} partnerUsername={partner.username} /></div></section></main>;
 }

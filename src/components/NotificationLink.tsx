@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket-client";
 
@@ -22,6 +23,7 @@ function notificationText(notification: IncomingNotification) {
 }
 
 export default function NotificationLink({ initialUnread }: { initialUnread: number }) {
+  const pathname = usePathname();
   const [unread, setUnread] = useState(initialUnread);
   const [latest, setLatest] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -60,5 +62,5 @@ export default function NotificationLink({ initialUnread }: { initialUnread: num
     };
   }, []);
 
-  return <><Link href="/activity">Activity{unread > 0 && <span aria-label={`${unread} unread notifications`} className="ml-1 inline-grid min-w-5 place-items-center rounded-full bg-accent px-1 text-xs text-background">{unread > 99 ? "99+" : unread}</span>}</Link>{latest && <p className="fixed right-4 top-16 z-50 max-w-sm border border-accent bg-background px-3 py-2 font-mono text-xs shadow-lg" role="status">{latest}</p>}</>;
+  return <><Link className={`whitespace-nowrap ${pathname === "/activity" ? "text-foreground" : "text-[#7e93b3] hover:text-foreground"}`} href="/activity">Activity{unread > 0 && <span aria-label={`${unread} unread notifications`} className="ml-2 inline-grid min-w-5 place-items-center rounded-full bg-accent px-1 align-middle font-mono text-xs text-white">{unread > 99 ? "99+" : unread}</span>}</Link>{latest && <p className="fixed right-6 top-24 z-50 max-w-sm border border-[#9fc4e0] bg-white px-4 py-3 font-mono text-xs leading-relaxed shadow-lg" role="status">{latest}</p>}</>;
 }

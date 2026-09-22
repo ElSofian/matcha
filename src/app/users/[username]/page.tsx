@@ -5,6 +5,7 @@ import { query, withTransaction } from "@/lib/db";
 import { getCurrentUserId } from "@/lib/session";
 import { emitNotification } from "@/lib/realtime";
 import { refreshFameRating } from "@/lib/fame";
+import { characterFor } from "@/lib/characters";
 
 interface PublicUser {
   id: string;
@@ -21,7 +22,6 @@ interface PublicUser {
   last_seen: Date | null;
 }
 
-interface Photo { id: string; url: string; is_profile: boolean }
 interface Tag { id: string; name: string }
 interface RelationshipRow { viewer_likes: boolean; liked_you: boolean; own_has_primary_photo: boolean }
 
@@ -52,8 +52,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const user = rows[0];
   if (!user) notFound();
 
-  const [{ rows: photos }, { rows: tags }, { rows: relationshipRows }] = await Promise.all([
-    query<Photo>("SELECT id, url, is_profile FROM photos WHERE user_id = $1 ORDER BY is_profile DESC, created_at", [user.id]),
+  const [{ rows: tags }, { rows: relationshipRows }] = await Promise.all([
     query<Tag>(`SELECT t.id, t.name FROM tags t JOIN user_tags ut ON ut.tag_id = t.id WHERE ut.user_id = $1 ORDER BY t.name`, [user.id]),
     query<RelationshipRow>(
       `SELECT
@@ -94,10 +93,10 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     if (notificationCreated) emitNotification(user.id, { type: "view" });
   }
 
-  const profilePhoto = photos.find((photo) => photo.is_profile) ?? photos[0];
   const userAge = age(user.birth_date);
   const relation = relationshipRows[0];
   const isSelf = user.id === viewerId;
+  const character = characterFor(user.username);
 
-  return <main className="mx-auto w-full max-w-3xl px-4 py-10"><p className="font-mono text-xs uppercase tracking-[0.2em] opacity-50">Public unit profile</p><h1 className="font-display mt-2 text-5xl">{user.first_name} {user.last_name}</h1><p className="font-mono mt-1 opacity-60">@{user.username} · Fame {user.fame_rating}</p>{profilePhoto && <Image alt={`${user.first_name}'s profile`} className="mt-6 aspect-square w-full max-w-md object-cover" height={600} loading="eager" src={profilePhoto.url} width={600} />}<dl className="mt-6 grid gap-3 sm:grid-cols-2"><div><dt>Age</dt><dd>{userAge ?? "Not specified"}</dd></div><div><dt>Location</dt><dd>{user.city ?? "Not specified"}</dd></div><div><dt>Status</dt><dd>{user.is_online ? "Online" : user.last_seen ? `Last seen ${user.last_seen.toLocaleString()}` : "Offline"}</dd></div><div><dt>Compatibility</dt><dd>{user.gender ?? "Not specified"} · {user.sexual_preference}</dd></div></dl>{user.bio && <p className="mt-6 whitespace-pre-wrap">{user.bio}</p>}<div className="mt-6 flex flex-wrap gap-2">{tags.map((tag) => <span className="border border-foreground/20 px-2 py-1 font-mono text-sm" key={tag.id}>{tag.name}</span>)}</div>{!isSelf && <ProfileActions canLike={relation.own_has_primary_photo} initialRelationship={{ viewerLikes: relation.viewer_likes, likedYou: relation.liked_you, isMatch: relation.viewer_likes && relation.liked_you }} username={user.username} />}</main>;
+  return <main className="site-grid cyber-page relative overflow-hidden"><section className="relative min-h-[calc(100vh-6.5rem)]"><Image alt={`${user.first_name}'s profile`} className="pointer-events-none absolute bottom-0 left-1/2 h-[70vh] w-auto max-w-none -translate-x-1/2 object-contain" priority src={character.image} /><div className="absolute left-3 top-[25%] z-10 max-w-sm sm:left-7"><p className="font-display text-[clamp(3.8rem,7.5vw,7.5rem)] leading-none tracking-[-0.08em]">{character.model}</p><div className="mt-3 flex items-center gap-4"><span className="h-px w-24 bg-foreground" /><h1 className="text-3xl font-medium">{user.first_name}</h1></div><ul className="mt-6 space-y-1.5 text-base"><li>− &nbsp; Age: {userAge ?? "Not specified"}</li><li>− &nbsp; Location: {user.city ?? "Not specified"}</li><li>− &nbsp; Fame rating: {user.fame_rating}</li><li>− &nbsp; Status: {user.is_online ? "Online" : "Offline"}</li></ul>{user.bio && <p className="mt-12 max-w-sm text-base leading-snug">{user.bio}</p>}<div className="mt-6 flex flex-wrap gap-2">{tags.map((tag) => <span className="font-medium" key={tag.id}>#{tag.name}</span>)}</div>{!isSelf && <ProfileActions canLike={relation.own_has_primary_photo} initialRelationship={{ viewerLikes: relation.viewer_likes, likedYou: relation.liked_you, isMatch: relation.viewer_likes && relation.liked_you }} username={user.username} />}</div></section></main>;
 }

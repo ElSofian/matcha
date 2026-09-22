@@ -16,7 +16,7 @@ export default function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="font-mono border border-foreground/30 px-4 py-2 text-xs uppercase tracking-[0.15em] transition hover:border-accent hover:text-accent"
+      className="whitespace-nowrap border-l border-[#cfd9e4] pl-5 text-sm text-[#7e93b3] hover:text-foreground"
     >
       Disconnect
     </button>
