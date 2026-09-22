@@ -67,3 +67,19 @@ export const profileTagsSchema = z.object({
     .max(10)
     .transform((tags) => [...new Set(tags)]),
 });
+
+export const relationshipActionSchema = z
+  .object({
+    action: z.enum(["like", "unlike", "block", "unblock", "report"]),
+    reason: z.string().trim().max(500).optional(),
+  })
+  .superRefine((data, context) => {
+    if (data.action !== "report" && data.reason !== undefined) {
+      context.addIssue({ code: "custom", message: "A reason is only valid for a report.", path: ["reason"] });
+    }
+  });
+
+export const emailChangeSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(255),
+  currentPassword: z.string().min(1).max(256),
+});

@@ -42,7 +42,7 @@ async function main() {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::gender_enum, $9::preference_enum, $10, $11, 'approximate', $12, $13, TRUE, $14)
         ON CONFLICT (username) DO UPDATE SET is_verified = TRUE
         RETURNING id`,
-        [`fixture-${padded}@cymatch.local`, `fixture-${padded}`, `FX-${padded}`, `Unit${padded}`, "Fixture", passwordHash, birthDate, gender, preference, `Fixture profile ${padded} for local discovery testing.`, city, latitude, longitude, index % 100],
+        [`fixture-${padded}@cymatch.local`, `fixture-${padded}`, `FX-${padded}`, `Unit${padded}`, "Fixture", passwordHash, birthDate, gender, preference, `Fixture profile ${padded} for local discovery testing.`, city, latitude, longitude, 0],
       );
       const userId = rows[0].id;
       for (const offset of [0, 3, 7]) {

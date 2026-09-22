@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { query, withTransaction } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
-import { generateToken } from "@/lib/tokens";
+import { generateToken, hashToken } from "@/lib/tokens";
 import { requestPasswordResetSchema } from "@/lib/validation";
+import { isRateLimited, requireSameOrigin } from "@/lib/security";
 
 export async function POST(request: Request) {
+  const originError = requireSameOrigin(request); if (originError) return originError;
   const body = await request.json().catch(() => null);
   const parsed = requestPasswordResetSchema.safeParse(body);
   if (!parsed.success) {
@@ -15,6 +17,7 @@ export async function POST(request: Request) {
   }
 
   const { email } = parsed.data;
+  if (isRateLimited(`reset:${email}`, 3, 60 * 60_000)) return NextResponse.json({ message: "If this email is registered, a reset link has been sent." });
 
   const { rows } = await query<{ id: string }>(
     "SELECT id FROM users WHERE email = $1",
@@ -36,7 +39,7 @@ export async function POST(request: Request) {
         await client.query(
           `INSERT INTO email_tokens (user_id, token, type, expires_at)
            VALUES ($1, $2, 'password_reset', NOW() + INTERVAL '1 hour')`,
-          [rows[0].id, token],
+          [rows[0].id, hashToken(token)],
         );
       });
 
@@ -44,7 +47,7 @@ export async function POST(request: Request) {
     } catch {
       // A failed email must not leave a usable reset token behind.
       await query("UPDATE email_tokens SET used = TRUE WHERE token = $1", [
-        token,
+        hashToken(token),
       ]).catch(() => undefined);
     }
   }

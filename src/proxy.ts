@@ -6,6 +6,16 @@ const PUBLIC_PATHS = ["/login", "/register", "/reset-password"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isApiPath = pathname.startsWith("/api/");
+  if (isApiPath) {
+    if (!["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+      const origin = request.headers.get("origin");
+      if (!origin || origin !== request.nextUrl.origin) {
+        return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
+      }
+    }
+    return NextResponse.next();
+  }
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const isAuthenticated = Boolean(token && verifyAccessToken(token));
   const isPublicPath = PUBLIC_PATHS.some(
@@ -25,6 +35,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

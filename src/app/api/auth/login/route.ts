@@ -7,6 +7,7 @@ import {
   SESSION_DURATION_SECONDS,
 } from "@/lib/auth";
 import { loginSchema } from "@/lib/validation";
+import { isRateLimited, requireSameOrigin } from "@/lib/security";
 
 interface UserRow {
   id: string;
@@ -15,6 +16,7 @@ interface UserRow {
 }
 
 export async function POST(request: Request) {
+  const originError = requireSameOrigin(request); if (originError) return originError;
   const body = await request.json().catch(() => null);
   const parsed = loginSchema.safeParse(body);
   if (!parsed.success) {
@@ -25,6 +27,7 @@ export async function POST(request: Request) {
   }
 
   const { username, password } = parsed.data;
+  if (isRateLimited(`login:${username.toLowerCase()}`, 8, 15 * 60_000)) return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
 
   const { rows } = await query<UserRow>(
     "SELECT id, password_hash, is_verified FROM users WHERE username = $1",

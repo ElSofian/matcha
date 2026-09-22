@@ -4,10 +4,12 @@ import { hashPassword } from "@/lib/auth";
 import { checkPasswordStrength } from "@/lib/password";
 import { sendVerificationEmail } from "@/lib/email";
 import { generateUniqueSerial } from "@/lib/serial";
-import { generateToken } from "@/lib/tokens";
+import { generateToken, hashToken } from "@/lib/tokens";
 import { registerSchema } from "@/lib/validation";
+import { isRateLimited, requireSameOrigin } from "@/lib/security";
 
 export async function POST(request: Request) {
+  const originError = requireSameOrigin(request); if (originError) return originError;
   const body = await request.json().catch(() => null);
   const parsed = registerSchema.safeParse(body);
   if (!parsed.success) {
@@ -18,6 +20,7 @@ export async function POST(request: Request) {
   }
 
   const { email, username, firstName, lastName, password } = parsed.data;
+  if (isRateLimited(`register:${email}`, 3, 60 * 60_000)) return NextResponse.json({ error: "Too many registration attempts. Try again later." }, { status: 429 });
 
   const strength = checkPasswordStrength(password, [
     email.split("@")[0],
@@ -55,14 +58,20 @@ export async function POST(request: Request) {
     await client.query(
       `INSERT INTO email_tokens (user_id, token, type, expires_at)
        VALUES ($1, $2, 'email_verification', NOW() + INTERVAL '1 hour')`,
-      [rows[0].id, token],
+      [rows[0].id, hashToken(token)],
     );
   });
 
-  await sendVerificationEmail(email, token);
+  let verificationEmailSent = true;
+  try {
+    await sendVerificationEmail(email, token);
+  } catch {
+    verificationEmailSent = false;
+    await query("UPDATE email_tokens SET used = TRUE WHERE token = $1", [hashToken(token)]).catch(() => undefined);
+  }
 
   return NextResponse.json(
-    { message: "Account created. Check your email to activate it.", username, serialNumber },
+    { message: verificationEmailSent ? "Account created. Check your email to activate it." : "Account created, but the activation email could not be sent. Request a new link from the login page.", username, serialNumber },
     { status: 201 },
   );
 }

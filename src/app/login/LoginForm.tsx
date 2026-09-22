@@ -15,6 +15,8 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
+  const [resendStatus, setResendStatus] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,6 +45,14 @@ export default function LoginForm() {
     }
   }
 
+  async function resendVerification(event: React.FormEvent) {
+    event.preventDefault();
+    setResendStatus(null);
+    const response = await fetch("/api/auth/resend-verification", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: resendEmail }) });
+    const data = await response.json();
+    setResendStatus(response.ok ? data.message : (data.error ?? "Unable to request a new link."));
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <CornerFrame className="w-full max-w-sm border border-accent/30 bg-white/60 p-8 backdrop-blur-sm">
@@ -65,6 +75,7 @@ export default function LoginForm() {
             This activation link is invalid or expired.
           </p>
         )}
+        <form className="mb-4 border border-foreground/15 p-3" onSubmit={resendVerification}><p className="font-mono text-xs opacity-70">Need a new activation link?</p><div className="mt-2 flex gap-2"><input aria-label="Email for activation link" className="min-w-0 flex-1 border border-foreground/20 bg-white/70 px-2 py-1 text-sm" onChange={(event) => setResendEmail(event.target.value)} required type="email" value={resendEmail} /><button className="border border-foreground/30 px-2 font-mono text-xs" type="submit">Resend</button></div>{resendStatus && <p className="mt-2 font-mono text-xs" role="status">{resendStatus}</p>}</form>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1">

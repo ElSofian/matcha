@@ -18,22 +18,23 @@ Matcha requirements remain authoritative.
    npm ci
    ```
 
-2. Copy `.env.example` to `.env` and replace every placeholder, especially
-   `JWT_SECRET`, the Resend values and the sender address.
-
-3. Start PostgreSQL in one terminal, if you do not use a system PostgreSQL:
+2. Start PostgreSQL in one terminal, if you do not use a system PostgreSQL:
 
    ```sh
    npm run db:start
    ```
 
-4. Apply the database schema:
+3. In a second terminal, initialize the local environment, migrate the schema,
+   create the 500 fixtures and run the static checks:
 
    ```sh
-   npm run db:migrate
+   npm run setup
    ```
 
-5. Start the application in another terminal:
+   The command creates `.env` with a local JWT secret when it does not exist.
+   Configure the Resend values in `.env` before testing actual emails.
+
+4. Start the application in that second terminal:
 
    ```sh
    npm run dev
@@ -49,6 +50,16 @@ npx tsc --noEmit --incremental false
 npm run build
 ```
 
+`npm run db:fame:refresh` recalculates the public rating from received likes,
+mutual likes and unique profile visitors from the last 30 days.
+
+## Main routes
+
+- `/discover`: compatible-profile suggestions and advanced search.
+- `/activity`: visits, received likes and notifications.
+- `/messages`: mutual connections and real-time chat.
+- `/profile`: profile, photos, tags and email settings.
+
 ## Security rules
 
 - Never commit `.env` or real credentials.
@@ -59,4 +70,8 @@ npm run build
 
 ## Evaluation readiness
 
-The evaluation database must contain at least 500 distinct profiles. A seed
+The evaluation database must contain at least 500 distinct profiles. `npm run
+db:seed` creates those fixtures and the local test account:
+
+- username: `demo-unit`
+- password: `MatchaDemo!42`

@@ -39,7 +39,8 @@ Nom de l'app : **CY//MATCH**
 - Échapper toute sortie utilisateur (XSS) — à faire au moment de l'écriture du code,
   pas en fin de projet.
 - Validation stricte de tous les inputs et uploads de fichiers.
-- CSRF token sur les formulaires sensibles.
+- Les mutations HTTP `/api/*` vérifient l'origine de la requête ; les routes
+  d'authentification sont également limitées en mémoire.
 - `.env` exclu de Git dès le premier commit (`.gitignore` déjà en place).
 - Une faille de sécurité = note 0 sur le projet entier. Traiter chaque feature avec
   cette contrainte dès l'écriture, pas en audit final.
@@ -64,7 +65,7 @@ DB derrière :
 
 | Champ DB (sujet)     | Label UI CyberLife         | Modifiable |
 |-----------------------|-----------------------------|------------|
-| `username` (unique)  | Unit ID / username          | Oui (choisi à l'inscription) |
+| `username` (unique)  | Unit ID / username          | Non (choisi à l'inscription) |
 | `serial_number`      | Serial No. (`#SE-4821-B`)   | Non (auto-généré, interne au lore) |
 | —                     | Model (`AX400`, catégorie) | Non |
 | `first_name`         | Designation                 | Oui |
@@ -105,21 +106,18 @@ Pas de cards classiques façon Tinder. La photo de l'android EST la page sur
 Discover — fond rouge/rose profond avec la personne incrustée dedans (édition PNG
 sans fond), nom en Bebas Neue en overlay bas, deux boutons flottants (pass / like).
 
-## Pages & structure
+## Pages & structure actuelles
 
-- **Discover** — swipe cinématique plein écran, un profil à la fois.
-- **Search** — liste/grille filtrable et triable (âge, localisation, fame rating,
-  tags) — c'est ici que la grille d'évaluation vérifie tri/filtre, pas sur Discover.
-- **Messages** — liste de conversations (gauche) + panel de droite avec stats
-  (matches actifs, non lus, compatibilité moyenne, deviant index) + matchs récents.
-  Cliquer une conversation redirige vers `/chat/[id]`, page séparée.
-- **Profile** (3 tabs) :
-  - **Profile** : unit data (designation, owner, location), compatibility profile,
-    bio, tags. Android géant à droite avec fame rating + status en overlay.
-  - **Settings** : account (designation, owner, email), reset access code (modal).
-  - **Photos** : grille hero (photo de profil en grand, span 2 lignes) + 4 photos
-    secondaires en 2×2, actions au hover (★ définir profil / × supprimer).
-- **Login / Register** — card centrée, corners, mêmes patterns visuels.
+- **Home** — tableau de bord et raccourcis.
+- **Discover** — suggestions compatibles et recherche avancée (âge, localisation,
+  fame, tags, tri).
+- **Profile** — informations, géolocalisation consentie, tags, photos et e-mail.
+- **Activity** — visiteurs, likes reçus et notifications.
+- **Messages** (`/messages`) — connexions mutuelles et conversations
+  (`/messages/[username]`) en Socket.io.
+- **Profil public** (`/users/[username]`) — consultation, like/unlike, report,
+  block et chat quand le match est mutuel.
+- **Login / Register / Reset password** — avec renvoi de lien d'activation.
 
 ## Ce qui est interdit (rappel sujet)
 
@@ -132,7 +130,10 @@ sans fond), nom en Bebas Neue en overlay bas, deux boutons flottants (pass / lik
 
 ```bash
 npm run dev          # lance server.ts (Next.js + Socket.io)
-psql matcha           # accès direct DB en local
+npm run db:start      # démarre PostgreSQL embarqué (à laisser tourner)
+npm run setup         # migrations, seed, recalcul fame et contrôles
+npm run check         # lint + TypeScript
+npm run db:fame:refresh # recalcule les fame ratings existants
 ```
 
 ## Notes de contexte

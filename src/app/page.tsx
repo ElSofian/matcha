@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { query } from "@/lib/db";
 import { getCurrentUserId } from "@/lib/session";
 import CornerFrame from "@/components/CornerFrame";
-import LogoutButton from "@/components/LogoutButton";
 
 interface UserRow {
   username: string;
@@ -69,10 +68,15 @@ export default async function HomePage() {
           <Link href="/profile">
             Edit profile
           </Link>
+          <Link href="/discover">
+            Discover profiles
+          </Link>
+          <Link href="/activity">
+            View activity
+          </Link>
           <Link href="/users/fixture-001">
             View fixture profile
           </Link>
-          <LogoutButton />
         </div>
       </CornerFrame>
     </div>

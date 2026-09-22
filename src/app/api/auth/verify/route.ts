@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withTransaction } from "@/lib/db";
+import { hashToken } from "@/lib/tokens";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL as string;
 
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
        WHERE token = $1 AND type = 'email_verification'
          AND used = FALSE AND expires_at > NOW()
        RETURNING user_id`,
-      [token],
+      [hashToken(token)],
     );
 
     if (rows.length === 0) {

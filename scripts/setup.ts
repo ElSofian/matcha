@@ -29,6 +29,7 @@ function main() {
   console.log("\nDatabase must already be running: npm run db:start\n");
   run("npm", ["run", "db:migrate"]);
   run("npm", ["run", "db:seed"]);
+  run("npm", ["run", "db:fame:refresh"]);
   run("npm", ["run", "lint"]);
   run("npx", ["tsc", "--noEmit", "--incremental", "false"]);
   console.log("\nSetup complete. Start the app with: npm run dev");

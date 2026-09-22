@@ -33,9 +33,7 @@ export default function RegisterPage() {
         return;
       }
 
-      setSuccess(
-        `Unit ID ${data.username} created. Serial No. ${data.serialNumber}. Check your email to activate it.`,
-      );
+      setSuccess(`Unit ID ${data.username} created. Serial No. ${data.serialNumber}. ${data.message}`);
       setEmail("");
       setUsername("");
       setFirstName("");

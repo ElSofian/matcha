@@ -3,6 +3,7 @@ import { query, withTransaction } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { checkPasswordStrength } from "@/lib/password";
 import { confirmPasswordResetSchema } from "@/lib/validation";
+import { hashToken } from "@/lib/tokens";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
      JOIN users u ON u.id = et.user_id
      WHERE et.token = $1 AND et.type = 'password_reset'
        AND et.used = FALSE AND et.expires_at > NOW()`,
-    [token],
+    [hashToken(token)],
   );
 
   if (rows.length === 0) {
@@ -40,15 +41,22 @@ export async function POST(request: Request) {
 
   const passwordHash = await hashPassword(password);
 
-  await withTransaction(async (client) => {
+  const updated = await withTransaction(async (client) => {
+    const { rows: consumed } = await client.query<{ user_id: string }>(
+      `UPDATE email_tokens SET used = TRUE
+       WHERE token = $1 AND type = 'password_reset' AND used = FALSE AND expires_at > NOW()
+       RETURNING user_id`,
+      [hashToken(token)],
+    );
+    if (!consumed[0]) return false;
     await client.query("UPDATE users SET password_hash = $1 WHERE id = $2", [
       passwordHash,
       userId,
     ]);
-    await client.query("UPDATE email_tokens SET used = TRUE WHERE token = $1", [
-      token,
-    ]);
+    return true;
   });
+
+  if (!updated) return NextResponse.json({ error: "This reset link is invalid or has expired." }, { status: 400 });
 
   return NextResponse.json({ message: "Access Code updated. You can log in now." });
 }

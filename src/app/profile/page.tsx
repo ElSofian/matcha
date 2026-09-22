@@ -4,8 +4,10 @@ import { getCurrentUserId } from "@/lib/session";
 import ProfileForm from "./ProfileForm";
 import PhotoManager from "./PhotoManager";
 import TagManager from "./TagManager";
+import EmailForm from "./EmailForm";
 
 interface ProfileRow {
+  email: string;
   first_name: string;
   last_name: string;
   birth_date: Date | null;
@@ -36,7 +38,7 @@ export default async function ProfilePage() {
   }
 
   const { rows } = await query<ProfileRow>(
-    `SELECT first_name, last_name, birth_date, gender, sexual_preference,
+    `SELECT email, first_name, last_name, birth_date, gender, sexual_preference,
             bio, city, location_source, latitude, longitude
      FROM users WHERE id = $1`,
     [userId],
@@ -72,6 +74,7 @@ export default async function ProfilePage() {
       <ProfileForm initialProfile={initialProfile} />
       <PhotoManager initialPhotos={photos} />
       <TagManager initialTags={tags} />
+      <EmailForm initialEmail={profile.email} />
     </main>
   );
 }
